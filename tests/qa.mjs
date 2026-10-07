@@ -262,7 +262,7 @@ console.log('Submission failure');
 }
 
 /* ── 5. Mobile ──────────────────────────────────────────────── */
-for (const vp of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
+for (const vp of [{ width: 390, height: 844 }, { width: 430, height: 932 }, { width: 320, height: 640 }]) {
   console.log(`Mobile ${vp.width}×${vp.height}`);
   const { ctx, page, errors } = await open(vp);
   await wait(1900);
@@ -273,8 +273,21 @@ for (const vp of [{ width: 390, height: 844 }, { width: 320, height: 640 }]) {
   const h1 = await page.locator('h1').boundingBox();
   ok(h1.x + h1.width <= vp.width, `headline fits (${Math.round(h1.x + h1.width)} ≤ ${vp.width})`);
   ok(c.y + c.height <= vp.height, 'CTAs above the fold');
+  const fit = await page.evaluate(() => {
+    const [l1, l2] = [...document.querySelectorAll('main h1 span')].map((e) => e.getBoundingClientRect());
+    const btn = document.querySelector('main .dova-btn').getBoundingClientRect();
+    const mark = document.querySelector('main > header img').getBoundingClientRect();
+    const mid = (r) => r.left + r.width / 2;
+    return { widest: Math.max(l1.width, l2.width), btn: btn.width, l1mid: mid(l1), l2mid: mid(l2), btnMid: mid(btn), markMid: mid(mark) };
+  });
+  ok(Math.abs(fit.widest - fit.btn) <= 3, `headline spans the button width (${fit.widest.toFixed(1)} vs ${fit.btn.toFixed(1)})`);
+  ok([fit.l1mid, fit.l2mid, fit.markMid].every((m) => Math.abs(m - fit.btnMid) < 1.5), 'headline lines and wordmark centred on the buttons');
+  const splashMark = await page.locator('main > header img').boundingBox();
   await shot(page, `09-mobile-${vp.width}-splash`);
   await page.getByRole('button', { name: 'For therapists' }).click(); await wait(300);
+  const formMark = await dialog(page).locator('header img').boundingBox();
+  ok(Math.abs(splashMark.x - formMark.x) < 1 && Math.abs(splashMark.y - formMark.y) < 1, `wordmark stays put splash→form (Δx ${(formMark.x - splashMark.x).toFixed(2)}, Δy ${(formMark.y - splashMark.y).toFixed(2)})`);
+  await shot(page, `09b-mobile-${vp.width}-intro`);
   await dialog(page).getByRole('button', { name: /join the waitlist/i }).click(); await wait(250);
   await page.keyboard.type('A B'); await page.keyboard.press('Enter'); await wait(250);
   await page.keyboard.type('a@b.co'); await page.keyboard.press('Enter'); await wait(250);

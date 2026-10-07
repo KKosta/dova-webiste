@@ -87,7 +87,7 @@ export default class App extends React.Component {
   };
 
   photoRef = React.createRef(); markRef = React.createRef();
-  line1Ref = React.createRef(); line2Ref = React.createRef();
+  line1Ref = React.createRef(); line2Ref = React.createRef(); headRef = React.createRef();
   btn1Ref = React.createRef(); btn2Ref = React.createRef();
   flowRef = React.createRef(); stepRef = React.createRef(); cardRef = React.createRef();
   doneCardRef = React.createRef(); doneBadgeRef = React.createRef(); doneCheckRef = React.createRef();
@@ -163,9 +163,13 @@ export default class App extends React.Component {
       this._onMq = () => this.setState({ narrow: this._mq.matches });
       this._mq.addEventListener('change', this._onMq);
     }
+    window.addEventListener('resize', this.fitHeadline);
+    this.fitHeadline();
+    if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => this.fitHeadline());
     this.playEntrance();
   }
-  componentDidUpdate() {
+  componentDidUpdate(_, prevState) {
+    if (prevState.narrow !== this.state.narrow) this.fitHeadline();
     const key = this.state.flow ? this.state.flow + ':' + this.state.step : null;
     const prevKey = this._stepKey; this._stepKey = key;
     const wasOpen = this._wasOpen; this._wasOpen = !!this.state.flow;
@@ -199,11 +203,24 @@ export default class App extends React.Component {
   }
   componentWillUnmount() {
     window.removeEventListener('keydown', this.onKey, true);
+    window.removeEventListener('resize', this.fitHeadline);
     if (this._mq) this._mq.removeEventListener('change', this._onMq);
     clearTimeout(this._adv);
     clearTimeout(this._entranceFallback);
     document.body.style.overflow = '';
   }
+
+  /* Mobile: scale the headline so its longer line is exactly as wide as the buttons below it.
+     Width scales linearly with font size (tracking is in em), so one measurement is exact. */
+  fitHeadline = () => {
+    const h = this.headRef.current, l1 = this.line1Ref.current, l2 = this.line2Ref.current;
+    if (!this.state.narrow || !h || !l1 || !l2) return;
+    const widest = Math.max(l1.getBoundingClientRect().width, l2.getBoundingClientRect().width);
+    const current = parseFloat(getComputedStyle(l1).fontSize);
+    if (!widest || !current) return;
+    const size = Math.min(72, Math.floor(current * (h.clientWidth / widest) * 10) / 10);
+    if (Math.abs(size - (this.state.fitSize || 0)) > 0.2) this.setState({ fitSize: size });
+  };
 
   /* Couple → Dova → headline → buttons, each beat landing before the next begins. */
   playEntrance() {
@@ -255,7 +272,7 @@ export default class App extends React.Component {
       </picture>
     );
     return narrow
-      ? pic({ position: 'absolute', top: 0, left: 0, width: '100%', height: '64%', objectFit: 'cover', objectPosition: '28% 30%', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)', maskImage: 'linear-gradient(to bottom, #000 62%, transparent 100%)' })
+      ? pic({ position: 'absolute', top: '10%', left: 0, width: '100%', height: '62%', objectFit: 'cover', objectPosition: '28% 30%', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 14%, #000 64%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 14%, #000 64%, transparent 100%)' })
       : pic({ position: 'absolute', top: 0, right: 0, height: '100%', width: 'auto', maxWidth: 'none', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to left, transparent 0, #000 18%)', maskImage: 'linear-gradient(to left, transparent 0, #000 18%)' });
   }
 
@@ -380,10 +397,11 @@ export default class App extends React.Component {
             <div style={{ position: 'sticky', top: 0, zIndex: 2, height: 3, flexShrink: 0 }}>
               <div data-testid="progress" style={{ height: '100%', width: pct + '%', background: 'var(--cta)', transition: 'width var(--dur-base) var(--ease-out)' }} />
             </div>
-            <header style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: `${HDR_Y} ${HDR_X}`, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+            <header style={{ display: 'grid', gridTemplateColumns: this.state.narrow ? '1fr auto 1fr' : '1fr auto', alignItems: 'center', gap: 16, padding: `${HDR_Y} ${HDR_X}`, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
+              {this.state.narrow && <span aria-hidden="true" />}
               <img src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: 'clamp(22px, 2.2vw, 30px)', width: 'auto' }} />
               <button type="button" aria-label="Close" className="dova-close" onClick={this.closeFlow} style={{
-                flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, margin: '-9px -8px -9px 0',
+                flexShrink: 0, justifySelf: 'end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, margin: '-9px -8px -9px 0',
                 padding: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', color: 'var(--text-tertiary)', cursor: 'pointer',
                 transition: 'background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
               }}>
@@ -450,22 +468,25 @@ export default class App extends React.Component {
   }
 
   render() {
-    const { narrow, flow } = this.state;
+    const { narrow, flow, fitSize } = this.state;
     const sideX = `calc(${DLG_PAD} + ${HDR_X})`;
-    const line = { display: 'block', fontWeight: HEAD.weight, fontSize: 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' };
+    const line = narrow
+      // Mobile: centred, sized so the longer line spans the same width as the buttons.
+      ? { display: 'block', width: 'fit-content', margin: '0 auto', fontWeight: HEAD.weight, fontSize: fitSize ? fitSize + 'px' : 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' }
+      : { display: 'block', fontWeight: HEAD.weight, fontSize: 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' };
 
     return (
       <main style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: '#3C090C', display: 'flex', flexDirection: 'column' }}>
         {this.renderHero()}
 
-        <header style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}` }}>
+        <header style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: narrow ? 'center' : 'flex-start', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}` }}>
           <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: 'clamp(22px, 2.2vw, 30px)', width: 'auto' }} />
         </header>
 
-        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} clamp(40px, 10vh, 120px)` }}>
+        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} ${narrow ? 'clamp(24px, 4vh, 40px)' : 'clamp(40px, 10vh, 120px)'}` }}>
           <div style={{ width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: narrow ? 28 : 40 }}>
-            <h1 style={{
-              margin: 0, fontFamily: HEAD.font, fontWeight: 500, fontSize: 'clamp(40px, 5.4vw, 72px)', lineHeight: HEAD.line, letterSpacing: HEAD.track, wordSpacing: HEAD.word,
+            <h1 ref={this.headRef} style={{
+              margin: 0, textAlign: narrow ? 'center' : 'left', fontFamily: HEAD.font, fontWeight: 500, fontSize: 'clamp(40px, 5.4vw, 72px)', lineHeight: HEAD.line, letterSpacing: HEAD.track, wordSpacing: HEAD.word,
               fontKerning: 'normal', fontFeatureSettings: "'kern' 1, 'liga' 1", textRendering: 'optimizeLegibility', color: 'var(--text-on-dark)', textWrap: 'balance',
             }}>
               <span ref={this.line1Ref} style={line}>A New Partner for</span>
