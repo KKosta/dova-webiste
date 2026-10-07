@@ -22,33 +22,25 @@ npm run test:e2e     # SHOTS_DIR=./shots also saves screenshots
 
 ## Where submissions go
 
-The last step POSTs `{ flow, answers }` to `/api/waitlist` (`api/waitlist.js`). The function validates the submission, then forwards it as JSON to **`WAITLIST_WEBHOOK_URL`**, for example a Zapier, Make or n8n hook, a Slack workflow or your own API.
+The last step POSTs `{ flow, answers }` to `/api/waitlist` (`api/waitlist.js`). The function validates the submission, then saves it to whichever of these are set:
 
-- **Webhook not set:** the submission is only written to the Vercel function log. Set the variable before launch.
-- **Webhook fails:** the function returns 502. The form then shows an error and keeps the person's answers so they can try again.
+- **`NOTION_TOKEN`**: adds a row to the [📥 Dova.io waitlist signup](https://www.notion.so/3f2a7013b5948074bcb5ea4ea3eaa63f) database (`api/_notion.js`). Each question has its own column, `Type` says which form the row came from, and `Status` starts at New.
+- **`WAITLIST_WEBHOOK_URL`** (optional): also POSTs the raw JSON to that address.
 
-Example payload:
+If neither is set, the submission is only written to the Vercel function log. If every destination fails, the form shows an error and keeps the person's answers so they can try again.
 
-```json
-{
-  "flow": "therapists",
-  "submittedAt": "2026-10-07T12:00:00.000Z",
-  "answers": {
-    "name": "Ada Lovelace", "email": "ada@practice.com",
-    "country": "United States", "state": "California",
-    "years": "6 to 10 years", "caseload": "8", "fee": "$150 to $250", "pay": "A mix",
-    "hardest": ["Notes and admin", "Something else"], "hardest_other": "…",
-    "source": "Dr. Grace Hopper"
-  }
-}
-```
+Notion select options can't contain commas, so three answers are stored slightly reworded, for example "No, looking for one" becomes "No – looking for one". The rewording is in `OPTION_LABELS` in `api/_notion.js`. If you rename a column or option in Notion, update `api/_notion.js` and `tests/notion.test.mjs` to match, then run `npm test`.
 
-Couples submissions use the same shape, with `therapist`, `referral`, `therapistName`, `therapistEmail` and `goals`.
+### Connect Notion (one-off)
+
+1. Go to https://www.notion.so/profile/integrations, create a **new internal integration** in the deepspringai workspace (for example "Dova website"), and copy its secret.
+2. Open the waitlist database, then **••• → Connections → add "Dova website"**.
+3. Set `NOTION_TOKEN` to the secret in Vercel, and in `.env.local` to test locally.
 
 ## Deploy on Vercel
 
 1. Import the repo in Vercel. It detects Vite, and `vercel.json` sets the build to `npm run build` with output in `dist`.
-2. Add `WAITLIST_WEBHOOK_URL` under Project → Settings → Environment Variables.
+2. Add `NOTION_TOKEN` under Project → Settings → Environment Variables (and optionally `WAITLIST_WEBHOOK_URL`).
 3. Deploy.
 
 ## Layout
@@ -60,4 +52,6 @@ Couples submissions use the same shape, with `therapist`, `referral`, `therapist
 | `src/components/` | Ported Dova DS `Button`, `Input`, `Select`, `RadioRows`, `Checkbox`, `Eyebrow` |
 | `src/styles/` | DS tokens (colours, type, spacing) and page-level overrides (Aimee, Instrument Sans) |
 | `api/waitlist.js` | Vercel function that receives submissions |
+| `api/_notion.js` | Maps answers to Notion columns and creates the row |
+| `tests/notion.test.mjs` | `npm test`: checks every answer maps to a real Notion column and option |
 | `public/assets/` | Hero photo (WebP + JPEG fallback, about 55 KB), wordmark, Aimee font |

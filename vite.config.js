@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import waitlist from './api/waitlist.js';
 
@@ -10,4 +10,8 @@ const apiDev = () => ({
   configurePreviewServer(server) { server.middlewares.use('/api/waitlist', (req, res) => waitlist(req, res)); },
 });
 
-export default defineConfig({ plugins: [react(), apiDev()] });
+export default defineConfig(({ mode }) => {
+  // Make .env / .env.local values (NOTION_TOKEN, …) visible to the local API function.
+  Object.assign(process.env, loadEnv(mode, process.cwd(), ''));
+  return { plugins: [react(), apiDev()] };
+});

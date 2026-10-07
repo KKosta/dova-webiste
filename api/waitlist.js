@@ -1,6 +1,8 @@
 // Vercel serverless function: POST /api/waitlist
-// Validates a finished waitlist submission and forwards it to WAITLIST_WEBHOOK_URL.
-// Without a webhook configured, the submission is written to the function log only.
+// Validates a finished waitlist submission, then saves it to the Notion waitlist database
+// (NOTION_TOKEN) and/or forwards it to WAITLIST_WEBHOOK_URL. With neither set, it is only logged.
+
+import { saveToNotion } from './_notion.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FLOWS = new Set(['therapists', 'couples']);
@@ -39,19 +41,25 @@ export default async function handler(req, res) {
   if (JSON.stringify(answers).length > MAX_BYTES) return send(res, 413, { ok: false, error: 'Too large' });
 
   const entry = { flow, submittedAt: new Date().toISOString(), answers };
-  const hook = process.env.WAITLIST_WEBHOOK_URL;
-
-  if (!hook) {
-    console.log('[waitlist] submission (no WAITLIST_WEBHOOK_URL set):', JSON.stringify(entry));
-    return send(res, 200, { ok: true });
-  }
-
-  try {
-    const r = await fetch(hook, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
+  const { NOTION_TOKEN, NOTION_DATA_SOURCE_ID, WAITLIST_WEBHOOK_URL } = process.env;
+  const sinks = [];
+  if (NOTION_TOKEN) sinks.push(['notion', () => saveToNotion(entry, { token: NOTION_TOKEN, dataSourceId: NOTION_DATA_SOURCE_ID || undefined })]);
+  if (WAITLIST_WEBHOOK_URL) sinks.push(['webhook', async () => {
+    const r = await fetch(WAITLIST_WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(entry) });
     if (!r.ok) throw new Error('webhook responded ' + r.status);
+  }]);
+
+  if (!sinks.length) {
+    console.log('[waitlist] submission (no NOTION_TOKEN or WAITLIST_WEBHOOK_URL set):', JSON.stringify(entry));
     return send(res, 200, { ok: true });
-  } catch (err) {
-    console.error('[waitlist] forward failed:', err.message, JSON.stringify(entry));
-    return send(res, 502, { ok: false, error: 'Could not save submission' });
   }
+
+  const results = await Promise.allSettled(sinks.map(([, run]) => run()));
+  const failed = results.map((r, i) => [sinks[i][0], r]).filter(([, r]) => r.status === 'rejected');
+  if (failed.length) {
+    for (const [name, r] of failed) console.error(`[waitlist] ${name} failed:`, r.reason && r.reason.message, JSON.stringify(entry));
+    // Saved somewhere is good enough; only fail the person if nothing took it.
+    if (failed.length === sinks.length) return send(res, 502, { ok: false, error: 'Could not save submission' });
+  }
+  return send(res, 200, { ok: true });
 }
