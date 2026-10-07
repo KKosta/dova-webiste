@@ -1,0 +1,80 @@
+/* ───────────────────────────────────────────────────────────────────
+   Dova · Typography
+   Source Serif 4 for headings + quotes. Inter for everything else.
+   Every level has a job — don't reach for a size that isn't here.
+   If a body needs emphasis, use weight or color, not a new size.
+
+   MID-MIGRATION (Phase 2). Two notations are live at once:
+
+     decomposed  --type-h1-size / -line / -weight / -tracking   (original)
+     shorthand   --type-h1: 500 30px/1.15 var(--font-serif)     (the code)
+
+   The shorthand tokens are what packages/dova-ds ships and are the ones to
+   migrate to — they drop straight into `font:`. The decomposed set is kept,
+   with matching values, until every component is off it (Phase 3).
+   ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* Families */
+  --font-serif: "Source Serif 4", Georgia, serif;
+  --font-sans: "Inter", system-ui, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, monospace;
+
+  /* Weights */
+  --weight-regular: 400;
+  --weight-medium: 500;
+  --weight-semibold: 600;
+
+  /* ── Tracking (named by job, not by role) ─────────────────────── */
+  --tracking-display: -0.015em;  /* h1 */
+  --tracking-heading: -0.005em;  /* h2, h3 */
+  --tracking-eyebrow: 0.1em;     /* uppercase labels — eyebrows, chips */
+
+  /* ── The code's shorthand roles — MIGRATE TO THESE ────────────── */
+  --type-h1: 500 30px/1.15 var(--font-serif);
+  --type-h2: 500 24px/1.25 var(--font-serif);
+  --type-h3: 500 18px/1.35 var(--font-serif);
+  --type-body-lg: 400 18px/1.6 var(--font-sans);
+  --type-body: 400 16px/1.65 var(--font-sans);
+  --type-body-sm: 400 14px/1.55 var(--font-sans);
+  --type-body-sm-strong: 600 14px/1.55 var(--font-sans);
+  --type-caption: 400 12px/1.5 var(--font-sans);
+  --type-eyebrow: 600 12px/1.4 var(--font-sans);
+  --type-label: 600 14px/1.4 var(--font-sans);
+
+  /* ── Size scale (Tailwind's namespace — utilities read these) ─── */
+  --text-xs: 0.75rem;    /* 12px */
+  --text-sm: 0.875rem;   /* 14px */
+  --text-base: 1rem;     /* 16px */
+  --text-lg: 1.125rem;   /* 18px */
+  --text-xl: 1.5rem;     /* 24px */
+  --text-2xl: 1.875rem;  /* 30px */
+
+  /* ── Decomposed roles (original notation — values synced) ─────── */
+  /* h2 was 22px/1.3 and h3 1.2 line; the code moved both. */
+  --type-h1-size: 30px;   --type-h1-line: 1.15; --type-h1-weight: 500; --type-h1-tracking: -0.015em;
+  --type-h2-size: 24px;   --type-h2-line: 1.25; --type-h2-weight: 500; --type-h2-tracking: -0.005em;
+  --type-h3-size: 18px;   --type-h3-line: 1.35; --type-h3-weight: 500; --type-h3-tracking: -0.005em;
+
+  --type-body-lg-size: 18px;  --type-body-lg-line: 1.6;  /* large body — mobile / touch reading */
+  --type-body-size: 16px;     --type-body-line: 1.65;    /* default body */
+  --type-body-sm-size: 14px;  --type-body-sm-line: 1.55; /* card body, panel criterion */
+  /* caption 13px -> 12px, eyebrow 13px -> 12px, label 15px -> 14px (the code). */
+  --type-caption-size: 12px;  --type-caption-line: 1.5;  /* meta, status text, helpers */
+  --type-micro-size: 11px;    --type-micro-line: 1.4;    /* DEPRECATED — the code dropped --type-micro */
+
+  --type-eyebrow-size: 12px;  --type-eyebrow-weight: 600; --type-eyebrow-tracking: 0.1em;
+  --type-label-size: 14px;    --type-label-weight: 600;   /* form field labels */
+  --type-button-size: 14px;   --type-button-weight: 600;  /* DEPRECATED — Button sets its own per size */
+}
+
+/* Optional ready-made text classes (consumers may use tokens directly) */
+.dova-h1 { font: var(--type-h1); letter-spacing: var(--tracking-display); color: var(--text-primary); margin: 0; }
+.dova-h2 { font: var(--type-h2); letter-spacing: var(--tracking-heading); color: var(--text-primary); margin: 0; }
+.dova-h3 { font: var(--type-h3); letter-spacing: var(--tracking-heading); color: var(--text-primary); margin: 0; }
+.dova-body { font: var(--type-body); color: var(--text-secondary); }
+.dova-body-lg { font: var(--type-body-lg); color: var(--text-secondary); }
+.dova-body-sm { font: var(--type-body-sm); color: var(--text-secondary); }
+.dova-caption { font: var(--type-caption); color: var(--text-secondary); }
+.dova-eyebrow { font: var(--type-eyebrow); letter-spacing: var(--tracking-eyebrow); text-transform: uppercase; color: var(--text-tertiary); }
+.dova-quote { font-family: var(--font-serif); font-style: italic; font-weight: 500; font-size: 16px; line-height: 1.55; color: var(--text-primary); }

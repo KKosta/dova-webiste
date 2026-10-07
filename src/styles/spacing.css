@@ -1,0 +1,92 @@
+/* ───────────────────────────────────────────────────────────────────
+   Dova · Space & Surface
+   A deliberate radius ladder where each value has a job. Shadows are
+   rare — borders carry most of the work.
+
+   MID-MIGRATION (Phase 2). Two spacing scales are live at once:
+
+     step-indexed  --space-1..8   the original names (4,8,12,16,24,32,48,64)
+     px-named      --space-12..   the code's scale, where the NUMBER IS THE
+                                  PIXEL VALUE (packages/dova-ds)
+
+   They agree on every shared VALUE — only the index differs. The px names
+   below are additive, so a component can migrate at its own pace.
+
+   ⚠️ --space-2 / --space-4 / --space-8 CANNOT be added yet: those names
+   exist on both scales with different meanings (8/16/64 here vs 2/4/8 in
+   the code). Until every component is migrated, use --space-1 for 4px and
+   --space-2 for 8px — their values are already correct — and a literal
+   2px where the code says --space-2. Phase 3 rescales the three and
+   retires --space-1/3/5/6/7.
+   ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── Spacing · step-indexed (original — being retired in Phase 3) ── */
+  --space-1: 4px;   /* hairline gap, icon-to-text */
+  --space-2: 8px;   /* flex / grid gap — button row, chip row */
+  --space-3: 12px;  /* between siblings — section-head gap, paragraphs */
+  --space-4: 16px;  /* element gap inside a card; small section margin */
+  --space-5: 24px;  /* default card padding; section content gap */
+  --space-6: 32px;  /* between minor sections on the same page */
+  --space-7: 48px;  /* between major sections */
+  --space-8: 64px;  /* page padding on the canvas */
+
+  /* ── Spacing · px-named (the code's scale — migrate to these) ────── */
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+  --space-40: 40px;   /* no step-scale equivalent */
+  --space-48: 48px;
+  --space-64: 64px;
+  --space-96: 96px;   /* no step-scale equivalent */
+  --space-128: 128px; /* no step-scale equivalent */
+
+  /* ── Radii (3 rectangular + pill) ─────────────────────────────── */
+  --radius-sm: 6px;     /* buttons, chips */
+  --radius-md: 8px;     /* stage card (tighter so it doesn't compete) */
+  --radius-lg: 10px;    /* partner card, panel, journey band */
+  --radius-xl: 12px;    /* large containers, modals */
+  --radius-pill: 999px; /* chips, dots, avatars */
+
+  /* ── Shadows (4 — use sparingly; borders do most of the work) ─── */
+  /* Primary CTA — inset highlight + 1px drop */
+  --shadow-button: inset 0 1px 0 0 rgba(255,255,255,0.08), 0 1px 2px 0 rgba(31,61,46,0.18);
+  /* Soft 12px lift — stage card hover */
+  --shadow-card: inset 0 0 0 1px var(--border), 0 4px 12px 0 rgba(42,46,43,0.06);
+  /* Open / selected card — whisper 1px ring + soft, deeper lift */
+  --shadow-elev: 0 0 0 1px rgba(42,46,43,0.14), 0 6px 20px 0 rgba(42,46,43,0.10);
+  /* Side panel slide-in only */
+  --shadow-panel: inset 0 0 0 1px var(--border), -8px 0 24px 0 rgba(42,46,43,0.04);
+
+  /* Borders */
+  --border-hairline: 1px solid var(--border);
+  --border-soft: 1px solid var(--border-light);
+
+  /* ── Motion — calm, quick, no bounce. Honor prefers-reduced-motion ──
+     Three named curves replace the single --ease-standard, which is kept
+     until every component has migrated off it (Phase 3). */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);        /* default — entrances, hovers */
+  --ease-panel: cubic-bezier(0.2, 0.7, 0.2, 1);     /* side panels, drawers */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);   /* symmetric moves */
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1); /* @kind other · DEPRECATED → --ease-out */
+
+  /* ⚠️ --dur-fast was 120ms here and is 300ms in the code (adopted
+     2026-08-27). Pushed as drift: it slows every existing transition
+     that names it by 2.5x until components are reviewed. */
+  --dur-fast: 300ms; /* @kind other */
+  --dur-base: 200ms; /* @kind other */
+  --dur-slow: 400ms; /* @kind other */
+}
+
+/* Select / listbox menu entrance — fade + 4px slide. @kind other */
+@keyframes dovaSelectIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  @keyframes dovaSelectIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+}

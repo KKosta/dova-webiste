@@ -1,0 +1,32 @@
+@import './colors.css';
+@import './typography.css';
+@import './spacing.css';
+
+@font-face {
+  font-family: 'Aimee';
+  src: url('/assets/fonts/Aimee-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-display: swap;
+}
+
+/* This page sets body copy in Instrument Sans instead of the DS's Inter. */
+:root { --font-sans: 'Instrument Sans', system-ui, -apple-system, 'Segoe UI', sans-serif; }
+
+input::placeholder, textarea::placeholder { color: var(--text-tertiary); opacity: 1; }
+html, body { margin: 0; height: 100%; background: #3E1116; }
+#root { min-height: 100%; }
+a { color: var(--text-on-dark); }
+a:hover { color: var(--text-on-dark-secondary); }
+
+/* DS Button hover — real :hover so it can never get stuck "on". */
+.dova-btn[data-variant="primary"]:hover:not(:disabled) { background: var(--cta-hover) !important; }
+.dova-btn[data-variant="outline"]:hover:not(:disabled) { background: var(--surface) !important; }
+.dova-btn[data-variant="inverse"]:hover:not(:disabled) { background: var(--muted) !important; }
+.dova-btn[data-variant="ghost"]:hover:not(:disabled) { background: var(--muted) !important; color: var(--text-primary) !important; }
+.dova-btn:disabled { cursor: not-allowed; }
+.dova-btn:focus-visible, .dova-close:focus-visible, .dova-check:focus-visible { outline: 2px solid var(--interactive); outline-offset: 2px; }
+
+.dova-close:hover { background: var(--muted) !important; color: var(--text-primary) !important; }
+
+/* Keyboard focus on a radio row lands on the hidden input; show it on the row. */
+.dova-radio-row:has(input:focus-visible) { box-shadow: 0 0 0 3px var(--interactive-ring); }

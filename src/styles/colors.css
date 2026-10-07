@@ -1,0 +1,127 @@
+/* ───────────────────────────────────────────────────────────────────
+   Dova · Color
+   A small earthy palette with a strict status scale. Coral carries the
+   primary action; the sage family carries "you are touching this".
+   Status is always one of five named tokens — never an ad-hoc hex.
+   No gradients. No alarm colors.
+
+   Synced from packages/dova-ds/src/tokens.css (Phase 1 · colours only).
+   The code is canonical for VALUES; this file mirrors it.
+
+   ADDITIVE: every name this file has ever exported still resolves. The
+   pre-rebrand pigment names (--forest, --sage, --warm-white, --bg-sunken,
+   --border-light) are now aliases of the role tokens that replaced them,
+   so existing components keep rendering while they migrate one at a time.
+   ─────────────────────────────────────────────────────────────────── */
+
+:root {
+  /* ── BRAND ───────────────────────────────────────────────────────
+     THE PRIMARY ACTION'S FILL. Coral, ruled 2026-08-31. Its label is
+     --text-primary, NOT white: white on this is 3.16:1 and fails AA
+     outright; the darkest ink is 5.98:1. */
+  --cta: #FC584F;
+  /* The same coral deepened (H6 S80 L56), not darkened in place — pushing
+     #FC584F straight down goes neon and lands on --danger's doorstep. */
+  --cta-hover: #E94735;
+  /* The dark brand mark, which is what --cta USED to be. Splitting it out
+     is what made the coral safe: --cta was doing two jobs, a button fill
+     AND an ink for links, labels, glyphs and selected chips. */
+  --cta-ink: #3E1116;
+
+  /* ── INTERACTIVE ─────────────────────────────────────────────────
+     The brand's green for THINGS YOU TOUCH: a CTA on hover, the border
+     and ring of the field you are in, a checked box, a selected radio,
+     a switch that is on, a progress fill.
+     Replaces --accent / --accent-soft, which had drifted into doing three
+     unrelated jobs. There is no second interactive hue. */
+  --interactive: #6E9F94;
+  --interactive-ring: #A4CFC5;   /* opaque halo, not a 32% tint */
+  --interactive-soft: #DDF2E7;   /* palest step — a SELECTED fill */
+
+  /* ── SURFACES (three, and one border) ────────────────────────────
+     --canvas the page · --surface a thing on it · --muted an area that
+     recedes (hover, disabled, tracks, the rail). One border colour. */
+  --canvas: #F2EEEB;
+  --surface: #F9F8F5;
+  --muted: #DED9D9;
+  --border: #E1DDD7;
+
+  /* ── TEXT ────────────────────────────────────────────────────────
+     Three steps, evened out in perceptual lightness (13.8 / 14.0). */
+  --text-primary: #22090C;
+  --text-secondary: #534143;
+  --text-tertiary: #6C5A5D;      /* lightest value clearing AA on --muted */
+
+  /* ── TEXT ON A DARK GROUND ───────────────────────────────────────
+     ONE ramp for every dark ground, calibrated against the light ramp's
+     own steps (1.98x and 2.93x from primary). */
+  --text-on-dark: var(--surface);        /* not #fff — the warmth is the point */
+  --text-on-dark-secondary: #F4BCAB;
+  --text-on-dark-muted: #B8897A;
+
+  /* ── DISABLED ────────────────────────────────────────────────────── */
+  --text-disabled: #A9AFA9;
+  --disabled-fill: #796769;
+
+  /* ── THE RAIL (dark chrome) ──────────────────────────────────────── */
+  --rail-dark: var(--cta-ink);
+  --rail-dark-active: rgba(255, 255, 255, 0.12);
+  --rail-dark-text: var(--text-on-dark-muted);
+
+  /* ── STATUS (5 roles · label / bg / border) ──────────────────────
+     --success answers "did this go well"; --interactive answers "are you
+     touching this". Same hex by coincidence of brand once — split so a new
+     success green cannot silently repaint every focus ring on the product. */
+  --success: #2C4C48;  --success-bg: #DDF2E7;  --success-bd: #A4CFC5;
+  --warning: #A97C0E;  --warning-bg: #FBF1CA;  --warning-bd: #FCD251;
+  --danger:  #A52F3C;  --danger-bg:  #FCEBED;  --danger-bd:  #E98D96;
+  --info:    #4D6A83;  --info-bg:    #ECF0F4;  --info-bd:    #D2DAE3;
+  --neutral: #696F69;  --neutral-bg: #F0EEEA;  --neutral-bd: #DDD8CD;
+
+  /* ── CHART SERIES (categorical, 5 steps) ─────────────────────────
+     A real design decision, not a component internal: distinct hues at
+     even lightness so no series reads as more important than another. */
+  --chart-1: #3CA37B;
+  --chart-2: #3C7BD0;
+  --chart-3: #7B5BD0;
+  --chart-4: #E08E3C;
+  --chart-5: #C75B7B;
+
+  /* ── SEMANTIC ALIASES (use these in product code) ────────────────── */
+  --bg: var(--canvas);
+  --eyebrow: var(--text-tertiary);   /* quiet on purpose */
+  --focus-ring: var(--interactive-ring);
+  /* WHITE, by operator ruling 2026-08-31 (see Button.tsx `primary`).
+     3.16:1, under AA's 4.5 for text. The alternatives were measured —
+     --text-primary 5.98, --cta-ink 5.13, --surface 2.97 — so white is the
+     best of the LIGHT options and the worst of the legible ones, and it was
+     chosen on the look over the number, matching --success / --warning
+     carrying white in a filled Chip.
+     No size rescues it: AA's large-text exemption (3:1) needs 18.66px bold
+     or 24px regular, and the biggest button is xl at 18px/500.
+     If it ever has to clear AA, the fix is the FILL, not the label — nothing
+     light passes on a coral this bright, so it would take a darker --cta. */
+  --on-cta: #FFFFFF;
+
+  /* ── DEPRECATED — pre-rebrand names, kept so nothing breaks ──────
+     Each is an alias of the role token that replaced it. Retire these
+     only once every component has migrated (Phase 3). */
+  --on-dark: var(--text-on-dark);     /* the on-dark ramp's top step */
+  --ink: var(--text-primary);
+  --ink-soft: var(--text-secondary);
+  --ink-faint: var(--text-tertiary);
+  --warm-white: var(--canvas);        /* renamed · names the page, not the pigment */
+  --bg-sunken: var(--muted);          /* renamed · names the job */
+  --sage: var(--interactive);         /* role replaced the pigment name */
+  --sage-soft: var(--interactive-soft);
+  --accent: var(--interactive);       /* --accent split into --interactive-* */
+  --accent-soft: var(--interactive-soft);
+  --border-light: var(--border);      /* merged — one border colour, so a rule is a rule */
+  /* --forest carried two jobs: primary text AND dark UI. The code split them
+     into --text-primary and --rail-dark. Pointed at the text role; anything
+     using it as a dark GROUND should move to --rail-dark. */
+  --forest: var(--text-primary);
+  /* No successor in the code — --accent-soft-strong was an active-hover fill
+     in the old accent family. Left at its literal value; decide in Phase 2. */
+  --accent-soft-strong: #E3EDE7;
+}
