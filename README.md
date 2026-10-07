@@ -54,4 +54,5 @@ Notion select options can't contain commas, so three answers are stored slightly
 | `api/waitlist.js` | Vercel function that receives submissions |
 | `api/_notion.js` | Maps answers to Notion columns and creates the row |
 | `tests/notion.test.mjs` | `npm test`: checks every answer maps to a real Notion column and option |
-| `public/assets/` | Hero photo (WebP + JPEG fallback, about 55 KB), wordmark, Aimee font |
+| `public/assets/` | Hero photo (WebP + JPEG fallback, about 55 KB), wordmark, Aimee font, favicon SVG and app icons |
+| `public/favicon.ico`, `apple-touch-icon.png`, `site.webmanifest` | Favicon for older browsers, iPhone home-screen icon, Android icon manifest |
