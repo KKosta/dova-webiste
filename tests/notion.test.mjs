@@ -3,7 +3,7 @@
 // Usage: node tests/notion.test.mjs
 import assert from 'node:assert/strict';
 import { FLOWS } from '../src/flows.js';
-import { toNotionProperties, saveToNotion } from '../api/_notion.js';
+import { toNotionProperties, saveToNotion, checkNotion } from '../api/_notion.js';
 
 // Select / multi-select options as set up in the "Dova.io waitlist signup" database.
 const DB = {
@@ -59,6 +59,25 @@ assert.equal(req.url, 'https://api.notion.com/v1/pages');
 assert.equal(req.init.headers.Authorization, 'Bearer secret_x');
 assert.equal(req.init.headers['Notion-Version'], '2025-09-03');
 assert.deepEqual(JSON.parse(req.init.body).parent, { type: 'data_source_id', data_source_id: '3f2a7013-b594-8009-aee8-000b6759dfa5' });
-await assert.rejects(saveToNotion({ flow: 'couples', answers: { name: 'S', email: 's@e.com' } }, { token: 'x', fetchImpl: async () => ({ ok: false, status: 401, text: async () => 'unauthorized' }) }), /401/);
+const fail = (status, code) => async () => ({ ok: false, status, json: async () => ({ code, message: code }) });
+await assert.rejects(saveToNotion({ flow: 'couples', answers: { name: 'S', email: 's@e.com' } }, { token: 'x', fetchImpl: fail(401, 'unauthorized') }), /401 unauthorized/);
+
+// A rejected row (e.g. a renamed column) falls back to Name + Email with all answers in the page body.
+const calls = [];
+await saveToNotion({ flow: 'therapists', answers: { name: 'Ada', email: 'a@p.com', years: '6 to 10 years' } }, {
+  token: 'x',
+  fetchImpl: async (url, init) => { calls.push(JSON.parse(init.body)); return calls.length === 1 ? { ok: false, status: 400, json: async () => ({ code: 'validation_error', message: 'Years practicing is not a property' }) } : { ok: true }; },
+});
+assert.equal(calls.length, 2);
+assert.deepEqual(Object.keys(calls[1].properties), ['Name', 'Email']);
+assert.match(calls[1].children[0].code.rich_text[0].text.content, /6 to 10 years/);
+
+// Status check explains each failure in plain words.
+assert.match((await checkNotion({ token: '' })).problem, /not set/);
+assert.match((await checkNotion({ token: 'ntn_x ' })).problem, /space/);
+assert.match((await checkNotion({ token: 'x', fetchImpl: fail(401, 'unauthorized') })).problem, /rejected the token/);
+assert.match((await checkNotion({ token: 'x', fetchImpl: fail(404, 'object_not_found') })).problem, /Connections/);
+const okDs = async () => ({ ok: true, json: async () => ({ title: [{ plain_text: 'Dova.io waitlist signup' }], properties: Object.fromEntries(COLUMNS.map((c) => [c, {}])) }) });
+assert.deepEqual(await checkNotion({ token: 'x', fetchImpl: okDs }), { ok: true, database: 'Dova.io waitlist signup' });
 
 console.log(`✓ Notion mapping: ${n} answer combinations land on real columns and options; request shape OK`);

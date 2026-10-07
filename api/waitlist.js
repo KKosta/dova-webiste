@@ -2,7 +2,7 @@
 // Validates a finished waitlist submission, then saves it to the Notion waitlist database
 // (NOTION_TOKEN) and/or forwards it to WAITLIST_WEBHOOK_URL. With neither set, it is only logged.
 
-import { saveToNotion } from './_notion.js';
+import { saveToNotion, checkNotion } from './_notion.js';
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const FLOWS = new Set(['therapists', 'couples']);
@@ -26,8 +26,13 @@ function send(res, status, body) {
 }
 
 export default async function handler(req, res) {
+  // GET /api/waitlist: a status check that says whether Notion is connected (no data is written).
+  if (req.method === 'GET') {
+    const notion = await checkNotion({ token: process.env.NOTION_TOKEN, dataSourceId: process.env.NOTION_DATA_SOURCE_ID || undefined }).catch((e) => ({ ok: false, problem: e.message }));
+    return send(res, notion.ok ? 200 : 500, { notion, webhook: Boolean(process.env.WAITLIST_WEBHOOK_URL) });
+  }
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST');
+    res.setHeader('Allow', 'GET, POST');
     return send(res, 405, { ok: false, error: 'Method not allowed' });
   }
 

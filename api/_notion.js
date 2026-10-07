@@ -47,11 +47,57 @@ export function toNotionProperties(flow, a) {
   return p;
 }
 
-export async function saveToNotion({ flow, answers }, { token, dataSourceId = DEFAULT_DATA_SOURCE_ID, fetchImpl = fetch } = {}) {
+const headers = (token) => ({ Authorization: `Bearer ${token}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' });
+
+async function notionError(r) {
+  let body = {};
+  try { body = await r.json(); } catch {}
+  const err = new Error(`Notion responded ${r.status} ${body.code || ''}: ${String(body.message || '').slice(0, 300)}`);
+  err.code = body.code || `http_${r.status}`;
+  return err;
+}
+
+async function createPage(properties, children, { token, dataSourceId, fetchImpl }) {
   const r = await fetchImpl('https://api.notion.com/v1/pages', {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Notion-Version': NOTION_VERSION, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ parent: { type: 'data_source_id', data_source_id: dataSourceId }, properties: toNotionProperties(flow, answers) }),
+    headers: headers(token),
+    body: JSON.stringify({ parent: { type: 'data_source_id', data_source_id: dataSourceId }, properties, ...(children ? { children } : {}) }),
   });
-  if (!r.ok) throw new Error(`Notion responded ${r.status}: ${(await r.text()).slice(0, 500)}`);
+  if (!r.ok) throw await notionError(r);
+}
+
+export async function saveToNotion({ flow, answers }, { token, dataSourceId = DEFAULT_DATA_SOURCE_ID, fetchImpl = fetch } = {}) {
+  const opts = { token, dataSourceId, fetchImpl };
+  try {
+    await createPage(toNotionProperties(flow, answers), null, opts);
+  } catch (err) {
+    // If the database's columns were renamed or changed, still keep the signup:
+    // save the essentials and put every answer in the page body.
+    if (err.code !== 'validation_error') throw err;
+    console.error('[waitlist] full row rejected, saving fallback row:', err.message);
+    const all = toNotionProperties(flow, answers);
+    const core = { Name: all.Name, Email: all.Email };
+    const body = [{ object: 'block', type: 'code', code: { language: 'json', rich_text: [{ type: 'text', text: { content: JSON.stringify(answers, null, 2).slice(0, 2000) } }] } }];
+    await createPage(core, body, opts);
+  }
+}
+
+/** Checks the token can see the database, for GET /api/waitlist. Never returns the token. */
+export async function checkNotion({ token, dataSourceId = DEFAULT_DATA_SOURCE_ID, fetchImpl = fetch } = {}) {
+  if (!token) return { ok: false, problem: 'NOTION_TOKEN is not set in Vercel (or the site was not redeployed after adding it).' };
+  if (token !== token.trim()) return { ok: false, problem: 'NOTION_TOKEN has a space or line break at the start or end. Re-paste it in Vercel and redeploy.' };
+  const r = await fetchImpl(`https://api.notion.com/v1/data_sources/${dataSourceId}`, { headers: headers(token) });
+  if (r.ok) {
+    const ds = await r.json();
+    const cols = Object.keys(ds.properties || {});
+    const missing = ['Name', 'Type', 'Email', 'Status', 'Country', 'Goals', 'Hardest right now'].filter((c) => !cols.includes(c));
+    return missing.length ? { ok: false, problem: `Connected, but the database is missing columns: ${missing.join(', ')}` } : { ok: true, database: (ds.title || []).map((t) => t.plain_text).join('') };
+  }
+  const err = await notionError(r);
+  const problem = {
+    unauthorized: 'Notion rejected the token. Check NOTION_TOKEN is the integration secret (starts with ntn_ or secret_), then redeploy.',
+    object_not_found: 'The token works, but the integration cannot see the waitlist database. In Notion open the database → ••• → Connections → add your integration.',
+    restricted_resource: 'The integration lacks access. Give it "Read content" and "Insert content" capabilities, and connect it to the database.',
+  }[err.code] || err.message;
+  return { ok: false, code: err.code, problem };
 }
