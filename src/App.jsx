@@ -36,6 +36,17 @@ const FROST = {
   '--border': 'rgba(249, 248, 245, 0.12)',
 };
 
+/* Height of the visible screen with the browser's address bar showing (CSS svh). Stable while the bar slides away. */
+let svhProbe;
+function svh() {
+  if (!svhProbe) {
+    svhProbe = document.createElement('div');
+    svhProbe.style.cssText = 'position:fixed;top:0;left:0;width:0;height:100vh;height:100svh;visibility:hidden;pointer-events:none';
+    document.body.appendChild(svhProbe);
+  }
+  return svhProbe.getBoundingClientRect().height || window.innerHeight;
+}
+
 const isEmail = (x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((x || '').trim());
 const prefersReduced = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const val = (e) => (e && e.target ? e.target.value : e);
@@ -218,7 +229,8 @@ export default class App extends React.Component {
     const widest = Math.max(l1.getBoundingClientRect().width, l2.getBoundingClientRect().width);
     const current = parseFloat(getComputedStyle(l1).fontSize);
     if (!widest || !current) return;
-    const size = Math.min(72, Math.floor(current * (h.clientWidth / widest) * 10) / 10);
+    // …but never taller than ~6% of the visible screen height, so short phones keep room for the photo and buttons.
+    const size = Math.min(72, svh() * 0.06, Math.floor(current * (h.clientWidth / widest) * 10) / 10);
     if (Math.abs(size - (this.state.fitSize || 0)) > 0.2) this.setState({ fitSize: size });
   };
 
@@ -476,15 +488,15 @@ export default class App extends React.Component {
       : { display: 'block', fontWeight: HEAD.weight, fontSize: 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' };
 
     return (
-      <main style={{ position: 'relative', minHeight: '100vh', overflow: 'hidden', background: '#3C090C', display: 'flex', flexDirection: 'column' }}>
+      <main className="dova-main" style={{ position: 'relative', overflow: 'hidden', background: '#3C090C', display: 'flex', flexDirection: 'column' }}>
         {this.renderHero()}
 
         <header style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: narrow ? 'center' : 'flex-start', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}` }}>
           <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: 'clamp(22px, 2.2vw, 30px)', width: 'auto' }} />
         </header>
 
-        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} ${narrow ? 'clamp(24px, 4vh, 40px)' : 'clamp(40px, 10vh, 120px)'}` }}>
-          <div style={{ width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: narrow ? 28 : 40 }}>
+        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} ${narrow ? 'calc(clamp(20px, 4svh, 40px) + env(safe-area-inset-bottom, 0px))' : 'clamp(40px, 10vh, 120px)'}` }}>
+          <div style={{ width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: narrow ? 'clamp(16px, 3.2svh, 28px)' : 40 }}>
             <h1 ref={this.headRef} style={{
               margin: 0, textAlign: narrow ? 'center' : 'left', fontFamily: HEAD.font, fontWeight: 500, fontSize: 'clamp(40px, 5.4vw, 72px)', lineHeight: HEAD.line, letterSpacing: HEAD.track, wordSpacing: HEAD.word,
               fontKerning: 'normal', fontFeatureSettings: "'kern' 1, 'liga' 1", textRendering: 'optimizeLegibility', color: 'var(--text-on-dark)', textWrap: 'balance',

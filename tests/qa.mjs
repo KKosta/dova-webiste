@@ -262,7 +262,8 @@ console.log('Submission failure');
 }
 
 /* ── 5. Mobile ──────────────────────────────────────────────── */
-for (const vp of [{ width: 390, height: 844 }, { width: 430, height: 932 }, { width: 320, height: 640 }]) {
+// Heights are the VISIBLE area with the browser bars showing (e.g. iPhone 14 Safari ≈ 390×664, Pixel Chrome ≈ 412×780).
+for (const vp of [{ width: 390, height: 844 }, { width: 390, height: 664 }, { width: 412, height: 780 }, { width: 360, height: 560 }, { width: 430, height: 932 }, { width: 320, height: 640 }]) {
   console.log(`Mobile ${vp.width}×${vp.height}`);
   const { ctx, page, errors } = await open(vp);
   await wait(1900);
@@ -272,15 +273,20 @@ for (const vp of [{ width: 390, height: 844 }, { width: 430, height: 932 }, { wi
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no horizontal scroll');
   const h1 = await page.locator('h1').boundingBox();
   ok(h1.x + h1.width <= vp.width, `headline fits (${Math.round(h1.x + h1.width)} ≤ ${vp.width})`);
-  ok(c.y + c.height <= vp.height, 'CTAs above the fold');
+  ok(c.y + c.height <= vp.height - 16, `both buttons fully on screen (bottom ${Math.round(c.y + c.height)} of ${vp.height})`);
+  ok(await page.evaluate(() => document.documentElement.scrollHeight <= window.innerHeight + 1), 'page fits the screen, no scrolling needed');
+  const photo = await page.locator('main img[alt^="A couple"]').boundingBox();
+  ok(photo.height > vp.height * 0.55 && photo.height < vp.height * 0.7, `photo scales with screen height (${Math.round(photo.height)}px of ${vp.height})`);
   const fit = await page.evaluate(() => {
     const [l1, l2] = [...document.querySelectorAll('main h1 span')].map((e) => e.getBoundingClientRect());
     const btn = document.querySelector('main .dova-btn').getBoundingClientRect();
     const mark = document.querySelector('main > header img').getBoundingClientRect();
     const mid = (r) => r.left + r.width / 2;
-    return { widest: Math.max(l1.width, l2.width), btn: btn.width, l1mid: mid(l1), l2mid: mid(l2), btnMid: mid(btn), markMid: mid(mark) };
+    const size = parseFloat(getComputedStyle(document.querySelector('main h1 span')).fontSize);
+    return { size, widest: Math.max(l1.width, l2.width), btn: btn.width, l1mid: mid(l1), l2mid: mid(l2), btnMid: mid(btn), markMid: mid(mark) };
   });
-  ok(Math.abs(fit.widest - fit.btn) <= 3, `headline spans the button width (${fit.widest.toFixed(1)} vs ${fit.btn.toFixed(1)})`);
+  const capped = fit.size >= vp.height * 0.06 - 0.5;
+  ok(capped ? fit.widest <= fit.btn + 1 : Math.abs(fit.widest - fit.btn) <= 3, `headline ${capped ? 'capped by screen height, within' : 'spans'} the button width (${fit.widest.toFixed(1)} vs ${fit.btn.toFixed(1)})`);
   ok([fit.l1mid, fit.l2mid, fit.markMid].every((m) => Math.abs(m - fit.btnMid) < 1.5), 'headline lines and wordmark centred on the buttons');
   const splashMark = await page.locator('main > header img').boundingBox();
   await shot(page, `09-mobile-${vp.width}-splash`);

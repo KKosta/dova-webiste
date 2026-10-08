@@ -15,6 +15,10 @@
 input::placeholder, textarea::placeholder { color: var(--text-tertiary); opacity: 1; }
 html, body { margin: 0; height: 100%; background: #3E1116; }
 #root { min-height: 100%; }
+
+/* Page height = the visible screen. Plain 100vh on mobile is the height with the address bar
+   HIDDEN, so the bottom of the page (the buttons) sat behind the bar. svh is the height with it shown. */
+.dova-main { min-height: 100vh; min-height: 100svh; }
 a { color: var(--text-on-dark); }
 a:hover { color: var(--text-on-dark-secondary); }
 
