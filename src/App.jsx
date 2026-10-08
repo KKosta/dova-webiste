@@ -11,8 +11,10 @@ const HERO_ALT = 'A couple holding each other, seen from behind';
 const DLG_PAD = 'clamp(0px, 2vw, 24px)';
 const HDR_Y = 'clamp(20px, 2.6vw, 32px)';
 const HDR_X = 'clamp(24px, 3.4vw, 48px)';
-/* Wordmark height: larger on phones. Shared by the splash and form headers so it doesn't move when a form opens. */
-const markHeight = (narrow) => (narrow ? 32 : 'clamp(26.4px, 2.64vw, 36px)');
+/* Wordmark as an editorial masthead. Shared by the splash and form headers so it doesn't move when a form opens.
+   Desktop: matches the headline's cap height (Aimee caps ≈ 0.69em of the 6.4vw/72px headline), so the two read
+   as one type system. Phones: a centred nameplate at ~40% of the screen width. */
+const markHeight = (narrow) => (narrow ? 'clamp(36px, 10.5vw, 46px)' : 'clamp(32px, 4.4vw, 50px)');
 
 /* Headline: Aimee regular. */
 const HEAD = { font: "'Aimee', Georgia, serif", weight: 400, line: 1.14, track: '-0.005em', word: '-0.03em' };
@@ -284,17 +286,15 @@ export default class App extends React.Component {
   };
 
   /* ── render ─────────────────────────────────────────────────── */
+  /* Desktop: full-height photo on the right, fading into the page on its left edge. */
   renderHero() {
-    const { narrow } = this.state;
     const pic = (style) => (
       <picture>
         <source srcSet="/assets/dova-hero.webp" type="image/webp" />
         <img ref={this.photoRef} src="/assets/dova-hero.jpg" alt={HERO_ALT} style={style} />
       </picture>
     );
-    return narrow
-      ? pic({ position: 'absolute', top: '10%', left: 0, width: '100%', height: '62%', objectFit: 'cover', objectPosition: '28% 30%', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 14%, #000 64%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 14%, #000 64%, transparent 100%)' })
-      : pic({ position: 'absolute', top: 0, right: 0, height: '100%', width: 'auto', maxWidth: 'none', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to left, transparent 0, #000 18%)', maskImage: 'linear-gradient(to left, transparent 0, #000 18%)' });
+    return pic({ position: 'absolute', top: 0, right: 0, height: '100%', width: 'auto', maxWidth: 'none', transform: 'scaleX(-1)', WebkitMaskImage: 'linear-gradient(to left, transparent 0, #000 18%)', maskImage: 'linear-gradient(to left, transparent 0, #000 18%)' });
   }
 
   renderQuestion(q) {
@@ -500,35 +500,65 @@ export default class App extends React.Component {
       ? { display: 'block', width: 'fit-content', margin: '0 auto', fontWeight: HEAD.weight, fontSize: fitSize ? fitSize + 'px' : 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' }
       : { display: 'block', fontWeight: HEAD.weight, fontSize: 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' };
 
+    const header = (
+      <header style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: narrow ? 'center' : 'flex-start', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}`, flexShrink: 0 }}>
+        <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: markHeight(narrow), width: 'auto' }} />
+      </header>
+    );
+    const headline = (
+      <h1 ref={this.headRef} style={{
+        margin: 0, textAlign: narrow ? 'center' : 'left', fontFamily: HEAD.font, fontWeight: 500, fontSize: 'clamp(40px, 5.4vw, 72px)', lineHeight: HEAD.line, letterSpacing: HEAD.track, wordSpacing: HEAD.word,
+        fontKerning: 'normal', fontFeatureSettings: "'kern' 1, 'liga' 1", textRendering: 'optimizeLegibility', color: 'var(--text-on-dark)', textWrap: 'balance',
+      }}>
+        <span ref={this.line1Ref} style={line}>A New Partner for</span>
+        <span ref={this.line2Ref} style={line}>Couples’ Therapy.</span>
+      </h1>
+    );
+    const ctas = (
+      // Phones: side by side, sharing the width equally; label and padding shrink so both fit down to 320px.
+      <div style={{ display: 'flex', flexDirection: 'row', flexWrap: narrow ? 'nowrap' : 'wrap', gap: narrow ? 10 : 12 }}>
+        <div ref={this.btn1Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
+          <Button variant="primary" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('therapists')}>For therapists</Button>
+        </div>
+        <div ref={this.btn2Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
+          <Button variant="inverse" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('couples')}>For couples</Button>
+        </div>
+      </div>
+    );
+
+    if (narrow) {
+      /* Phones: masthead, photo, headline, actions, stacked to fill exactly one screen.
+         The photo takes whatever height is left, so every part stays on screen at any phone size. */
+      return (
+        <main className="dova-main dova-main--stack" style={{ position: 'relative', overflow: 'hidden', background: '#3C090C', display: 'flex', flexDirection: 'column' }}>
+          {header}
+          <div style={{ position: 'relative', flex: '1 1 0', minHeight: 0, marginTop: 'clamp(4px, 1svh, 12px)' }}>
+            <picture>
+              <source srcSet="/assets/dova-hero.webp" type="image/webp" />
+              <img ref={this.photoRef} src="/assets/dova-hero.jpg" alt={HERO_ALT} style={{
+                position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', objectPosition: '18% 22%', transform: 'scaleX(-1)',
+                WebkitMaskImage: 'linear-gradient(to bottom, transparent 0, #000 12%, #000 66%, transparent 100%)', maskImage: 'linear-gradient(to bottom, transparent 0, #000 12%, #000 66%, transparent 100%)',
+              }} />
+            </picture>
+          </div>
+          {/* The headline rides up over the photo's faded bottom edge, as on the original mobile layout. */}
+          <div style={{ position: 'relative', flexShrink: 0, margin: 'calc(-1 * clamp(24px, 6svh, 60px)) 0 0', padding: `0 ${sideX} clamp(16px, 3.2svh, 28px)` }}>{headline}</div>
+          <div style={{ flexShrink: 0, padding: `0 ${sideX} calc(clamp(20px, 4svh, 40px) + env(safe-area-inset-bottom, 0px))` }}>{ctas}</div>
+          {flow && this.renderFlow()}
+        </main>
+      );
+    }
+
     return (
       <main className="dova-main" style={{ position: 'relative', overflow: 'hidden', background: '#3C090C', display: 'flex', flexDirection: 'column' }}>
         {this.renderHero()}
-
-        <header style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: narrow ? 'center' : 'flex-start', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}` }}>
-          <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: markHeight(narrow), width: 'auto' }} />
-        </header>
-
-        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} ${narrow ? 'calc(clamp(20px, 4svh, 40px) + env(safe-area-inset-bottom, 0px))' : 'clamp(40px, 10vh, 120px)'}` }}>
-          <div style={{ width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: narrow ? 'clamp(16px, 3.2svh, 28px)' : 40 }}>
-            <h1 ref={this.headRef} style={{
-              margin: 0, textAlign: narrow ? 'center' : 'left', fontFamily: HEAD.font, fontWeight: 500, fontSize: 'clamp(40px, 5.4vw, 72px)', lineHeight: HEAD.line, letterSpacing: HEAD.track, wordSpacing: HEAD.word,
-              fontKerning: 'normal', fontFeatureSettings: "'kern' 1, 'liga' 1", textRendering: 'optimizeLegibility', color: 'var(--text-on-dark)', textWrap: 'balance',
-            }}>
-              <span ref={this.line1Ref} style={line}>A New Partner for</span>
-              <span ref={this.line2Ref} style={line}>Couples’ Therapy.</span>
-            </h1>
-            {/* Phones: side by side, sharing the width equally; label and padding shrink so both fit down to 320px. */}
-            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: narrow ? 'nowrap' : 'wrap', gap: narrow ? 10 : 12 }}>
-              <div ref={this.btn1Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
-                <Button variant="primary" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('therapists')}>For therapists</Button>
-              </div>
-              <div ref={this.btn2Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
-                <Button variant="inverse" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('couples')}>For couples</Button>
-              </div>
-            </div>
+        {header}
+        <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'flex-start', padding: `0 ${sideX} clamp(40px, 10vh, 120px)` }}>
+          <div style={{ width: '100%', maxWidth: 640, display: 'flex', flexDirection: 'column', gap: 40 }}>
+            {headline}
+            {ctas}
           </div>
         </section>
-
         {flow && this.renderFlow()}
       </main>
     );

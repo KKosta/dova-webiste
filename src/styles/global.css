@@ -19,6 +19,8 @@ html, body { margin: 0; height: 100%; background: #3E1116; }
 /* Page height = the visible screen. Plain 100vh on mobile is the height with the address bar
    HIDDEN, so the bottom of the page (the buttons) sat behind the bar. svh is the height with it shown. */
 .dova-main { min-height: 100vh; min-height: 100svh; }
+/* Phones: exactly one visible screen; the photo flexes to fill what's left. */
+.dova-main--stack { height: 100vh; height: 100svh; }
 a { color: var(--text-on-dark); }
 a:hover { color: var(--text-on-dark-secondary); }
 
