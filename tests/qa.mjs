@@ -61,6 +61,7 @@ console.log('Splash · desktop 1440×900');
   await page.getByRole('button', { name: 'For therapists' }).click();
   await wait(400);
   const formMark = await dialog(page).locator('header img').boundingBox();
+  ok(Math.abs(splashMark.height - 36) < 0.5, `desktop wordmark is 36px tall (${splashMark.height})`);
   ok(Math.abs(splashMark.x - formMark.x) < 1 && Math.abs(splashMark.y - formMark.y) < 1, `wordmark aligned splash→form (Δx ${(formMark.x - splashMark.x).toFixed(2)}, Δy ${(formMark.y - splashMark.y).toFixed(2)})`);
   ok(errors.length === 0, `no console errors ${errors.join(' | ')}`);
   await ctx.close();

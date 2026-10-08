@@ -12,7 +12,7 @@ const DLG_PAD = 'clamp(0px, 2vw, 24px)';
 const HDR_Y = 'clamp(20px, 2.6vw, 32px)';
 const HDR_X = 'clamp(24px, 3.4vw, 48px)';
 /* Wordmark height: larger on phones. Shared by the splash and form headers so it doesn't move when a form opens. */
-const markHeight = (narrow) => (narrow ? 32 : 'clamp(22px, 2.2vw, 30px)');
+const markHeight = (narrow) => (narrow ? 32 : 'clamp(26.4px, 2.64vw, 36px)');
 
 /* Headline: Aimee regular. */
 const HEAD = { font: "'Aimee', Georgia, serif", weight: 400, line: 1.14, track: '-0.005em', word: '-0.03em' };
