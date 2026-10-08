@@ -11,6 +11,8 @@ const HERO_ALT = 'A couple holding each other, seen from behind';
 const DLG_PAD = 'clamp(0px, 2vw, 24px)';
 const HDR_Y = 'clamp(20px, 2.6vw, 32px)';
 const HDR_X = 'clamp(24px, 3.4vw, 48px)';
+/* Wordmark height: larger on phones. Shared by the splash and form headers so it doesn't move when a form opens. */
+const markHeight = (narrow) => (narrow ? 32 : 'clamp(22px, 2.2vw, 30px)');
 
 /* Headline: Aimee regular. */
 const HEAD = { font: "'Aimee', Georgia, serif", weight: 400, line: 1.14, track: '-0.005em', word: '-0.03em' };
@@ -411,7 +413,7 @@ export default class App extends React.Component {
             </div>
             <header style={{ display: 'grid', gridTemplateColumns: this.state.narrow ? '1fr auto 1fr' : '1fr auto', alignItems: 'center', gap: 16, padding: `${HDR_Y} ${HDR_X}`, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
               {this.state.narrow && <span aria-hidden="true" />}
-              <img src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: 'clamp(22px, 2.2vw, 30px)', width: 'auto' }} />
+              <img src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: markHeight(this.state.narrow), width: 'auto' }} />
               <button type="button" aria-label="Close" className="dova-close" onClick={this.closeFlow} style={{
                 flexShrink: 0, justifySelf: 'end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, margin: '-9px -8px -9px 0',
                 padding: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', color: 'var(--text-tertiary)', cursor: 'pointer',
@@ -482,6 +484,7 @@ export default class App extends React.Component {
   render() {
     const { narrow, flow, fitSize } = this.state;
     const sideX = `calc(${DLG_PAD} + ${HDR_X})`;
+    const narrowBtn = narrow ? { padding: '0 12px', fontSize: 'clamp(15px, 4.4vw, 18px)' } : undefined;
     const line = narrow
       // Mobile: centred, sized so the longer line spans the same width as the buttons.
       ? { display: 'block', width: 'fit-content', margin: '0 auto', fontWeight: HEAD.weight, fontSize: fitSize ? fitSize + 'px' : 'clamp(34px, 6.4vw, 72px)', whiteSpace: 'nowrap' }
@@ -492,7 +495,7 @@ export default class App extends React.Component {
         {this.renderHero()}
 
         <header style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: narrow ? 'center' : 'flex-start', gap: 12, minHeight: 30, padding: `calc(${DLG_PAD} + 3px + ${HDR_Y}) ${sideX} ${HDR_Y}` }}>
-          <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: 'clamp(22px, 2.2vw, 30px)', width: 'auto' }} />
+          <img ref={this.markRef} src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: markHeight(narrow), width: 'auto' }} />
         </header>
 
         <section style={{ position: 'relative', flex: 1, display: 'flex', alignItems: narrow ? 'flex-end' : 'center', justifyContent: 'flex-start', padding: `0 ${sideX} ${narrow ? 'calc(clamp(20px, 4svh, 40px) + env(safe-area-inset-bottom, 0px))' : 'clamp(40px, 10vh, 120px)'}` }}>
@@ -504,12 +507,13 @@ export default class App extends React.Component {
               <span ref={this.line1Ref} style={line}>A New Partner for</span>
               <span ref={this.line2Ref} style={line}>Couples’ Therapy.</span>
             </h1>
-            <div style={{ display: 'flex', flexDirection: narrow ? 'column' : 'row', flexWrap: 'wrap', gap: 12 }}>
-              <div ref={this.btn1Ref} style={{ display: 'flex', flexDirection: 'column' }}>
-                <Button variant="primary" size="xl" full={narrow} onClick={() => this.openFlow('therapists')}>For therapists</Button>
+            {/* Phones: side by side, sharing the width equally; label and padding shrink so both fit down to 320px. */}
+            <div style={{ display: 'flex', flexDirection: 'row', flexWrap: narrow ? 'nowrap' : 'wrap', gap: narrow ? 10 : 12 }}>
+              <div ref={this.btn1Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
+                <Button variant="primary" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('therapists')}>For therapists</Button>
               </div>
-              <div ref={this.btn2Ref} style={{ display: 'flex', flexDirection: 'column' }}>
-                <Button variant="inverse" size="xl" full={narrow} onClick={() => this.openFlow('couples')}>For couples</Button>
+              <div ref={this.btn2Ref} style={{ display: 'flex', flexDirection: 'column', flex: narrow ? '1 1 0' : undefined, minWidth: 0 }}>
+                <Button variant="inverse" size="xl" full={narrow} style={narrowBtn} onClick={() => this.openFlow('couples')}>For couples</Button>
               </div>
             </div>
           </div>

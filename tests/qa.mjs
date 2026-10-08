@@ -269,7 +269,10 @@ for (const vp of [{ width: 390, height: 844 }, { width: 390, height: 664 }, { wi
   await wait(1900);
   const t = await page.getByRole('button', { name: 'For therapists' }).boundingBox();
   const c = await page.getByRole('button', { name: 'For couples' }).boundingBox();
-  ok(c.y > t.y && Math.abs(t.width - c.width) < 1, 'CTAs stacked, same width');
+  ok(Math.abs(c.y - t.y) < 1 && Math.abs(t.width - c.width) < 1 && c.x > t.x, `CTAs side by side, same width (${Math.round(t.width)}px each)`);
+  ok(await page.evaluate(() => [...document.querySelectorAll('main .dova-btn')].every((b) => b.scrollWidth <= b.clientWidth)), 'button labels fit without clipping');
+  const markH = (await page.locator('main > header img').boundingBox()).height;
+  ok(Math.abs(markH - 32) < 0.5, `wordmark is 32px tall on mobile (${markH})`);
   ok(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth), 'no horizontal scroll');
   const h1 = await page.locator('h1').boundingBox();
   ok(h1.x + h1.width <= vp.width, `headline fits (${Math.round(h1.x + h1.width)} ≤ ${vp.width})`);
@@ -279,7 +282,8 @@ for (const vp of [{ width: 390, height: 844 }, { width: 390, height: 664 }, { wi
   ok(photo.height > vp.height * 0.55 && photo.height < vp.height * 0.7, `photo scales with screen height (${Math.round(photo.height)}px of ${vp.height})`);
   const fit = await page.evaluate(() => {
     const [l1, l2] = [...document.querySelectorAll('main h1 span')].map((e) => e.getBoundingClientRect());
-    const btn = document.querySelector('main .dova-btn').getBoundingClientRect();
+    const bs = [...document.querySelectorAll('main .dova-btn')].map((b) => b.getBoundingClientRect());
+    const btn = { left: bs[0].left, width: bs[1].right - bs[0].left };
     const mark = document.querySelector('main > header img').getBoundingClientRect();
     const mid = (r) => r.left + r.width / 2;
     const size = parseFloat(getComputedStyle(document.querySelector('main h1 span')).fontSize);
