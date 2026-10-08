@@ -49,6 +49,13 @@ function svh() {
   return svhProbe.getBoundingClientRect().height || window.innerHeight;
 }
 
+/* The header's icon buttons (× and, on phones, ‹ Back): 48px tap target, no box until hover. */
+const iconBtn = {
+  flexShrink: 0, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48,
+  padding: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', color: 'var(--text-tertiary)', cursor: 'pointer',
+  transition: 'background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
+};
+
 const isEmail = (x) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test((x || '').trim());
 const prefersReduced = () => typeof window !== 'undefined' && !!window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const val = (e) => (e && e.target ? e.target.value : e);
@@ -412,13 +419,14 @@ export default class App extends React.Component {
               <div data-testid="progress" style={{ height: '100%', width: pct + '%', background: 'var(--cta)', transition: 'width var(--dur-base) var(--ease-out)' }} />
             </div>
             <header style={{ display: 'grid', gridTemplateColumns: this.state.narrow ? '1fr auto 1fr' : '1fr auto', alignItems: 'center', gap: 16, padding: `${HDR_Y} ${HDR_X}`, borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
-              {this.state.narrow && <span aria-hidden="true" />}
+              {/* Phones: Back lives here, top left, instead of in the footer. Hidden on the intro, where the × already closes. */}
+              {this.state.narrow && (step === 'intro' ? <span aria-hidden="true" /> : (
+                <button type="button" aria-label="Back" className="dova-close" onClick={this.back} style={{ ...iconBtn, justifySelf: 'start', margin: '-9px 0 -9px -8px' }}>
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ width: 32, height: 32 }}><path d="M15 6l-6 6 6 6" /></svg>
+                </button>
+              ))}
               <img src="/assets/dova-wordmark-light.svg" alt="Dova" style={{ display: 'block', height: markHeight(this.state.narrow), width: 'auto' }} />
-              <button type="button" aria-label="Close" className="dova-close" onClick={this.closeFlow} style={{
-                flexShrink: 0, justifySelf: 'end', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 48, height: 48, margin: '-9px -8px -9px 0',
-                padding: 0, border: 'none', background: 'transparent', borderRadius: 'var(--radius-sm)', color: 'var(--text-tertiary)', cursor: 'pointer',
-                transition: 'background-color var(--dur-fast) var(--ease-out), color var(--dur-fast) var(--ease-out)',
-              }}>
+              <button type="button" aria-label="Close" className="dova-close" onClick={this.closeFlow} style={{ ...iconBtn, justifySelf: 'end', margin: '-9px -8px -9px 0' }}>
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" style={{ width: 32, height: 32 }}><path d="M6 6l12 12M18 6L6 18" /></svg>
               </button>
             </header>
@@ -447,11 +455,13 @@ export default class App extends React.Component {
                   )}
                 </div>
               </div>
-              <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: `20px ${HDR_X}`, borderTop: '1px solid var(--border)', flexShrink: 0 }}>
-                <div style={{ display: 'flex', marginLeft: -24 }}>
-                  <Button variant="ghost" size="lg" onClick={this.back}>Back</Button>
-                </div>
-              </footer>
+              {!this.state.narrow && (
+                <footer style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16, padding: `20px ${HDR_X}`, borderTop: '1px solid var(--border)', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', marginLeft: -24 }}>
+                    <Button variant="ghost" size="lg" onClick={this.back}>Back</Button>
+                  </div>
+                </footer>
+              )}
             </form>
           </div>
         )}

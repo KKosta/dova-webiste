@@ -298,6 +298,14 @@ for (const vp of [{ width: 390, height: 844 }, { width: 390, height: 664 }, { wi
   const formMark = await dialog(page).locator('header img').boundingBox();
   ok(Math.abs(splashMark.x - formMark.x) < 1 && Math.abs(splashMark.y - formMark.y) < 1, `wordmark stays put splash→form (Δx ${(formMark.x - splashMark.x).toFixed(2)}, Δy ${(formMark.y - splashMark.y).toFixed(2)})`);
   await shot(page, `09b-mobile-${vp.width}-intro`);
+  ok((await dialog(page).getByRole('button', { name: 'Back' }).count()) === 0, 'no Back on the intro (× closes)');
+  await dialog(page).getByRole('button', { name: /join the waitlist/i }).click(); await wait(250);
+  const back = dialog(page).getByRole('button', { name: 'Back' });
+  const backBox = await back.boundingBox(), closeBox = await dialog(page).getByRole('button', { name: 'Close' }).boundingBox();
+  ok(await dialog(page).locator('footer').count() === 0, 'no footer on mobile');
+  ok(Math.abs(backBox.y - closeBox.y) < 1 && backBox.x < vp.width / 4, 'Back is top left in the header, level with ×');
+  await back.click(); await wait(250);
+  ok(await dialog(page).getByText('FOR THERAPISTS', { exact: false }).isVisible(), 'header Back returns to the intro');
   await dialog(page).getByRole('button', { name: /join the waitlist/i }).click(); await wait(250);
   await page.keyboard.type('A B'); await page.keyboard.press('Enter'); await wait(250);
   await page.keyboard.type('a@b.co'); await page.keyboard.press('Enter'); await wait(250);
